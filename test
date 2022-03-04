@@ -39,7 +39,11 @@ def runTest(config):
   if m:
     print("[FAIL]\n%s" % m.group(1))
   else:
-    print("[PASS]")
+    pattern = re.compile("Simulation complete. No errors detected; congratulations", re.DOTALL)
+    if re.search(pattern, result):
+      print("[PASS]")
+    else:
+      print("[FAIL]\n%s" % result)
 
 print("Milestone tests")
 runTest("1-1-simple-send.conf")
