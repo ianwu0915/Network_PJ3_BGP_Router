@@ -389,7 +389,7 @@ class Message:
                 shost = ip_change_quad(snetwork, 3, 25)
                 dhost = ip_change_quad(dnetwork, 3, 25)
 
-                log("Simulator", "Sending data from %s to %s" % (shost, dhost))
+                log("Simulator", "Sending data from %s to %s" % (dhost, shost))
                 dpeer.send({"src": dhost, "dst": shost, "type": "data", "msg": { "ignore": "this" }})
 
       def check_data():
