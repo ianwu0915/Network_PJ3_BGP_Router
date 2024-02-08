@@ -24,7 +24,7 @@ def log(caller, msg):
 
 #### PARAMETERS
 
-EXECUTABLE_NAME = "3700router"
+EXECUTABLE_NAME = "4700router"
 
 def get_config(config_file):
   # Load config file

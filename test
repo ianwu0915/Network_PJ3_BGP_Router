@@ -5,7 +5,7 @@ import subprocess
 import sys
 import re
 
-EXECUTABLE_NAME = "3700router"
+EXECUTABLE_NAME = "4700router"
 RUN_SCRIPT_NAME = "run"
 CONFIG_DIR = "configs"
 
