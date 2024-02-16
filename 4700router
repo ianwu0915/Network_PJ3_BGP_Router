@@ -2,15 +2,24 @@
 
 import argparse, socket, time, json, select, struct, sys, math
 
+# Should constantly be reading from the sockets to make sure we receive all messages
+# handle multiple sockets using select or poll
+# handle json messages based on type, source, destination, and message
+
 class Router:
 
     relations = {}
     sockets = {}
     ports = {}
 
+
     def __init__(self, asn, connections):
         print("Router at AS %s starting up" % asn)
         self.asn = asn
+
+        self.routing_table = {}
+
+        # Create a socket for each connection
         for relationship in connections:
             port, neighbor, relation = relationship.split("-")
 
@@ -39,7 +48,15 @@ class Router:
                         srcif = sock
                         break
                 msg = k.decode('utf-8')
+                message = json.loads(msg.strip())
 
+                type = message['type']
+                # Handle the message
+                # type = update
+                if type == "update":
+                    return
+                elif type == "data":
+                    return
                 print("Received message '%s' from %s" % (msg, srcif))
         return
 
