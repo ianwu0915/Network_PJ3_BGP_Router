@@ -66,14 +66,22 @@ class Router:
                         break
                 msg = k.decode('utf-8')
                 print("Received message '%s' from %s" % (msg, srcif))
+
                 message = json.loads(msg)
                 msg_type = message['type']
-                # Handle the message
+
                 # type = update
                 if msg_type == "update":
                     self.update(message)
+
+                # type = data
                 elif msg_type == "data":
-                    return
+                    # forward the message to the destination
+                    dst = message['dst']
+                    print("Forwarding message to %s" % dst)
+
+                    # find the route to the destination
+
                 else:
                     print("Unknown message type: %s" % msg_type)
         return
