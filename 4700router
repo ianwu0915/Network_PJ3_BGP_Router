@@ -1,6 +1,7 @@
 #!/usr/bin/env -S python3 -u
 
 import argparse, socket, time, json, select, struct, sys, math
+
 from message import Message
 
 
@@ -17,6 +18,7 @@ class Router:
         self.ports = {}
         self.neighbors = []
         self.routing_table = []
+        self.messageCopy = []
 
         # Create a socket for each connection
         for relationship in connections:
@@ -39,10 +41,18 @@ class Router:
     def send(self, network, message):
         self.sockets[network].sendto(message.encode('utf-8'), ('localhost', self.ports[network]))
 
+    # Accept a message(json) and update the routing table
     def update(self, message):
-        msg = Message(message)
-        self.routing_table.append(message)
+        route = Message(message["msg"])
+        self.routing_table.append(route)
+        as_path = route.ASPath
+        as_path.insert(0, self.asn)
         # send to all neighbors
+        for neighbor in self.neighbors:
+            if neighbor != message["src"]:
+                self.send(neighbor,
+                          json.dumps({"msg": route.copy(as_path),
+                                      "src": self.our_addr(neighbor), 'dst': neighbor, 'type': 'update'}))
 
     def run(self):
         while True:
@@ -55,16 +65,17 @@ class Router:
                         srcif = sock
                         break
                 msg = k.decode('utf-8')
-                message = json.loads(msg.strip())
-
-                type = message['type']
+                print("Received message '%s' from %s" % (msg, srcif))
+                message = json.loads(msg)
+                msg_type = message['type']
                 # Handle the message
                 # type = update
-                if type == "update":
+                if msg_type == "update":
+                    self.update(message)
+                elif msg_type == "data":
                     return
-                elif type == "data":
-                    return
-                print("Received message '%s' from %s" % (msg, srcif))
+                else:
+                    print("Unknown message type: %s" % msg_type)
         return
 
 

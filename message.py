@@ -7,12 +7,9 @@ class Message:
         self.origin = messageJson['origin']
         self.selfOrigin = messageJson['selfOrigin']
 
-    def convertToJSON(self):
+    def copy(self, new_AsPath):
         return {
-            "network": self.network,
-            "netmask": self.netmask,
-            "localpref": self.localpref,
-            "ASPath": self.ASPath,
-            "origin": self.origin,
-            "selfOrigin": self.selfOrigin
+            'netmask': self.netmask,
+            'ASPath': new_AsPath,
+            'network': self.network
         }
