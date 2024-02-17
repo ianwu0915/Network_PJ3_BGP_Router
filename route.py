@@ -1,4 +1,4 @@
-class Message:
+class Route:
     def __init__(self, messageJson,):
         self.network = messageJson['network']
         self.netmask = messageJson['netmask']

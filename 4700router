@@ -2,7 +2,7 @@
 
 import argparse, socket, time, json, select, struct, sys, math
 
-from message import Message
+from route import Route
 
 
 # Should constantly be reading from the sockets to make sure we receive all messages
@@ -43,7 +43,7 @@ class Router:
 
     # Accept a message(json) and update the routing table
     def update(self, message):
-        route = Message(message["msg"])
+        route = Route(message["msg"])
         self.routing_table.append(route)
         as_path = route.ASPath
         as_path.insert(0, self.asn)
