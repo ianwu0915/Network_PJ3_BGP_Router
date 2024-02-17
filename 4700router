@@ -1,33 +1,35 @@
 #!/usr/bin/env -S python3 -u
 
 import argparse, socket, time, json, select, struct, sys, math
+from message import Message
+
 
 # Should constantly be reading from the sockets to make sure we receive all messages
 # handle multiple sockets using select or poll
 # handle json messages based on type, source, destination, and message
 
 class Router:
-
-    relations = {}
-    sockets = {}
-    ports = {}
-
-
     def __init__(self, asn, connections):
         print("Router at AS %s starting up" % asn)
         self.asn = asn
-
-        self.routing_table = {}
+        self.relations = {}
+        self.sockets = {}
+        self.ports = {}
+        self.neighbors = []
+        self.routing_table = []
 
         # Create a socket for each connection
         for relationship in connections:
             port, neighbor, relation = relationship.split("-")
 
+            self.neighbors.append(neighbor)
+
             self.sockets[neighbor] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.sockets[neighbor].bind(('localhost', 0))
             self.ports[neighbor] = int(port)
             self.relations[neighbor] = relation
-            self.send(neighbor, json.dumps({ "type": "handshake", "src": self.our_addr(neighbor), "dst": neighbor, "msg": {}  }))
+            self.send(neighbor,
+                      json.dumps({"type": "handshake", "src": self.our_addr(neighbor), "dst": neighbor, "msg": {}}))
 
     def our_addr(self, dst):
         quads = list(int(qdn) for qdn in dst.split('.'))
@@ -36,6 +38,11 @@ class Router:
 
     def send(self, network, message):
         self.sockets[network].sendto(message.encode('utf-8'), ('localhost', self.ports[network]))
+
+    def update(self, message):
+        msg = Message(message)
+        self.routing_table.append(message)
+        # send to all neighbors
 
     def run(self):
         while True:
@@ -59,6 +66,7 @@ class Router:
                     return
                 print("Received message '%s' from %s" % (msg, srcif))
         return
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='route packets')
