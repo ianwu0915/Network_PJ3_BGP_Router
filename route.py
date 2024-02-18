@@ -39,3 +39,14 @@ class Route:
             'selfOrigin': self.selfOrigin
         }
 
+    def withdraw(self, message):
+        return {
+            "msg": {
+                "netmask": self.netmask,
+                "ASPath": self.ASPath,
+                "network": self.network
+            },
+            "src": message["src"],
+            "dst": message["src"],
+            "type": "withdraw"
+        }

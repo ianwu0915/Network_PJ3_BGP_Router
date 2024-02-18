@@ -57,6 +57,22 @@ class Router:
                           json.dumps({"msg": route.copy(as_path),
                                       "src": self.our_addr(neighbor), 'dst': neighbor, 'type': 'update'}))
 
+    def withdraw(self, message):
+        self.messageCopy.append(message)
+
+        for each in message["msg"]:
+            for r in self.routing_table:
+                if (r.source == message["src"] and r.network == each["network"]
+                        and r.netmask == each['netmask']):
+                    self.routing_table.remove(r)
+
+        for neighbor in self.neighbors:
+            if neighbor != message["src"]:
+                self.send(neighbor, json.dumps({"msg": message["msg"], "src": self.our_addr(neighbor),
+                                                "dst": neighbor, "type": "withdraw"}))
+
+        return
+
     def dump(self, message):
         dump = []
         for route in self.routing_table:
@@ -114,6 +130,9 @@ class Router:
 
                 elif msg_type == "dump":
                     self.dump(message)
+
+                elif msg_type == "withdraw":
+                    self.withdraw(message)
 
                 else:
                     print("Unknown message type: %s" % msg_type)
