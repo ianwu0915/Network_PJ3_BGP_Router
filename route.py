@@ -1,11 +1,16 @@
+from ipAddress import Ip
+ 
+
 class Route:
-    def __init__(self, messageJson,):
-        self.network = messageJson['network']
-        self.netmask = messageJson['netmask']
-        self.localpref = messageJson['localpref']
-        self.ASPath = messageJson['ASPath']
-        self.origin = messageJson['origin']
-        self.selfOrigin = messageJson['selfOrigin']
+    def __init__(self, messageJson):
+        self.source = messageJson["src"]
+        self.network = messageJson["msg"]['network']
+        self.netmask = messageJson["msg"]['netmask']
+        self.localpref = messageJson["msg"]['localpref']
+        self.ASPath = messageJson["msg"]['ASPath']
+        self.origin = messageJson["msg"]['origin']
+        self.selfOrigin = messageJson["msg"]['selfOrigin']
+        self.ip = Ip(self.network, self.netmask)
 
     def copy(self, new_AsPath):
         return {

@@ -1,6 +1,7 @@
 
 class Ip:
     def __init__(self, ip, netmask):
+        self.ip_string = ip
         self.length = 4
         self.address = [int(qdn) for qdn in ip.split('.')]
         #self.binary_address = "".join(format(part, "08b") for part in self.address)

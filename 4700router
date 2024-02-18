@@ -45,7 +45,7 @@ class Router:
     def update(self, message):
         self.messageCopy.append(message)
 
-        route = Route(message["msg"])
+        route = Route(message)
         self.routing_table.append(route)
 
         as_path = route.ASPath.copy()
@@ -105,8 +105,12 @@ class Router:
                     # forward the message to the destination
                     dst = message['dst']
                     print("Forwarding message to %s" % dst)
-
+                    
                     # find the route to the destination
+                    for route in self.routing_table:
+                        if route.ip.belong_to(dst):
+                            self.send(route.source, msg)
+                            print(f"send to port {self.ports[route.source]}")
 
                 elif msg_type == "dump":
                     self.dump(message)
