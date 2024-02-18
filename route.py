@@ -14,3 +14,23 @@ class Route:
             'network': self.network
         }
 
+    # {
+    #       "origin": "EGP",
+    #       "localpref": 100,
+    #       "network": "172.168.0.0",
+    #       "ASPath": [2],
+    #       "netmask": "255.255.0.0",
+    #       "peer": "172.168.0.2",
+    #       "selfOrigin": true
+    #     }
+    def dump(self):
+        return {
+            'origin': self.origin,
+            'localpref': self.localpref,
+            'network': self.network,
+            'ASPath': self.ASPath,
+            'netmask': self.netmask,
+            'peer': "",
+            'selfOrigin': self.selfOrigin
+        }
+

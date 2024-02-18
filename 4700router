@@ -43,9 +43,12 @@ class Router:
 
     # Accept a message(json) and update the routing table
     def update(self, message):
+        self.messageCopy.append(message)
+
         route = Route(message["msg"])
         self.routing_table.append(route)
-        as_path = route.ASPath
+
+        as_path = route.ASPath.copy()
         as_path.insert(0, self.asn)
         # send to all neighbors
         for neighbor in self.neighbors:
@@ -53,6 +56,29 @@ class Router:
                 self.send(neighbor,
                           json.dumps({"msg": route.copy(as_path),
                                       "src": self.our_addr(neighbor), 'dst': neighbor, 'type': 'update'}))
+
+    def dump(self, message):
+        dump = []
+        for route in self.routing_table:
+            route_dump = route.dump()
+
+            # Update the peer field from the message_copy with the source IP of the router that sent "update" message
+            for msg in self.messageCopy:
+                if (((msg["type"] == "update" and route_dump['network'] == msg["msg"]["network"]) and
+                     route_dump['ASPath'] == msg["msg"]["ASPath"]) and
+                        route_dump['netmask'] == msg["msg"]["netmask"]):
+
+                    route_dump['peer'] = msg["src"]
+
+                    print("Peer: ", route_dump['peer'])
+                    break
+
+            dump.append(route_dump)
+
+        table_msg = json.dumps(
+            {"src": self.our_addr(message["src"]), "dst": message["src"], "type": "table", "msg": dump})
+
+        self.send(message["src"], table_msg)
 
     def run(self):
         while True:
@@ -81,6 +107,9 @@ class Router:
                     print("Forwarding message to %s" % dst)
 
                     # find the route to the destination
+
+                elif msg_type == "dump":
+                    self.dump(message)
 
                 else:
                     print("Unknown message type: %s" % msg_type)
