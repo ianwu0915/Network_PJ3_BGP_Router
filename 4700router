@@ -50,12 +50,21 @@ class Router:
 
         as_path = route.ASPath.copy()
         as_path.insert(0, self.asn)
-        # send to all neighbors
-        for neighbor in self.neighbors:
-            if neighbor != message["src"]:
-                self.send(neighbor,
-                          json.dumps({"msg": route.copy(as_path),
-                                      "src": self.our_addr(neighbor), 'dst': neighbor, 'type': 'update'}))
+
+        # if from customer, send to all neighbors
+        if self.relations[message["src"]] == "cust":
+            # send to all neighbors
+            for neighbor in self.neighbors:
+                if neighbor != message["src"]:
+                    self.send(neighbor,
+                              json.dumps({"msg": route.copy(as_path),
+                                          "src": self.our_addr(neighbor), 'dst': neighbor, 'type': 'update'}))
+        else:
+            for neighbor in self.neighbors:
+                if neighbor != message["src"] and self.relations[neighbor] == "cust":
+                    self.send(neighbor,
+                              json.dumps({"msg": route.copy(as_path),
+                                          "src": self.our_addr(neighbor), 'dst': neighbor, 'type': 'update'}))
 
     def withdraw(self, message):
         self.messageCopy.append(message)
@@ -66,10 +75,18 @@ class Router:
                         and r.netmask == each['netmask']):
                     self.routing_table.remove(r)
 
-        for neighbor in self.neighbors:
-            if neighbor != message["src"]:
-                self.send(neighbor, json.dumps({"msg": message["msg"], "src": self.our_addr(neighbor),
-                                                "dst": neighbor, "type": "withdraw"}))
+        # if from customer, send to all neighbors
+        if self.relations[message["src"]] == "cust":
+            for neighbor in self.neighbors:
+                if neighbor != message["src"]:
+                    self.send(neighbor, json.dumps({"msg": message["msg"], "src": self.our_addr(neighbor),
+                                                    "dst": neighbor, "type": "withdraw"}))
+
+        else:
+            for neighbor in self.neighbors:
+                if neighbor != message["src"] and self.relations[neighbor] == "cust":
+                    self.send(neighbor, json.dumps({"msg": message["msg"], "src": self.our_addr(neighbor),
+                                                    "dst": neighbor, "type": "withdraw"}))
 
         return
 
@@ -83,7 +100,6 @@ class Router:
                 if (((msg["type"] == "update" and route_dump['network'] == msg["msg"]["network"]) and
                      route_dump['ASPath'] == msg["msg"]["ASPath"]) and
                         route_dump['netmask'] == msg["msg"]["netmask"]):
-
                     route_dump['peer'] = msg["src"]
 
                     print("Peer: ", route_dump['peer'])
@@ -121,7 +137,7 @@ class Router:
                     # forward the message to the destination
                     dst = message['dst']
                     print("Forwarding message to %s" % dst)
-                    
+
                     # find the route to the destination
                     for route in self.routing_table:
                         if route.ip.belong_to(dst):
