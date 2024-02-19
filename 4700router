@@ -149,21 +149,43 @@ class Router:
             if match_length > longest:
                 longest = match_length
                 best_route = route
-            elif match_length == longest:
+            elif match_length < longest:
+                continue
+            else:
                 if not best_route:
                     continue
-                # Additional tiebreaker logic based on the provided rules
-                if route.localpref > best_route.localpref:
+                if best_route.localpref > route.localpref:
+                    continue
+                elif best_route.localpref < route.localpref:
                     best_route = route
-                elif route.localpref == best_route.localpref:
-                    if route.selfOrigin and not best_route.selfOrigin:
+                else:
+                    if best_route.selfOrigin and not route.selfOrigin:
+                        continue
+                    elif not best_route.selfOrigin and route.selfOrigin:
                         best_route = route
-                    elif len(route.ASPath) < len(best_route.ASPath):
-                        best_route = route
-                    elif route.compare_origin(best_route.origin) > 1:
-                        best_route = route
-                    elif route.source_to_int() < best_route.source_to_int():
-                        best_route = route
+                    else:
+                        if len(best_route.ASPath) < len(route.ASPath):
+                            continue
+                        elif len(best_route.ASPath) > len(route.ASPath):
+                            best_route = route
+                        else:
+                            if best_route.source_to_int() < route.source_to_int():
+                                continue
+                            else:
+                                best_route = route
+                    
+                # Additional tiebreaker logic based on the provided rules
+                # if route.localpref > best_route.localpref:
+                #     best_route = route
+                # elif route.localpref == best_route.localpref:
+                #     if route.selfOrigin and not best_route.selfOrigin:
+                #         best_route = route
+                #     elif len(route.ASPath) < len(best_route.ASPath):
+                #         best_route = route
+                #     elif route.compare_origin(best_route.origin) > 1:
+                #         best_route = route
+                #     elif route.source_to_int() < best_route.source_to_int():
+                #         best_route = route
 
         return best_route
               
@@ -196,7 +218,6 @@ class Router:
                 elif msg_type == "data":
                     # forward the message to the destination
                     dst = message['dst']
-                    print("Forwarding message to %s" % dst)
                     
                     best_route = self.check_route(dst)
                     # if the ip is not in the routing table return the msg with no route
@@ -204,8 +225,12 @@ class Router:
                         self.no_route(srcif, message["src"])
                         #self.send(srcif, json.dumps({"src": self.our_addr(srcif), "dst": message["src"], "type": "no route",
                                                      #"msg": {}}))
-                    else:
+                    elif self.relations[srcif] == "cust" or self.relations[best_route.source] == "cust":
                         self.send(best_route.source, msg)
+                        print("Forwarding message to %s for port %s" % (dst, best_route.source))
+                    else:
+                        print("the message is dropped!")
+                        
                         
                 elif msg_type == "dump":
                     self.dump(message)
