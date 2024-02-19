@@ -3,6 +3,7 @@ from ipAddress import Ip
 
 class Route:
     def __init__(self, messageJson):
+        # the source of the ip that send this route
         self.source = messageJson["src"]
         self.network = messageJson["msg"]['network']
         self.netmask = messageJson["msg"]['netmask']

@@ -160,13 +160,12 @@ class Router:
                     # forward the message to the destination
                     dst = message['dst']
                     print("Forwarding message to %s" % dst)
-
-                    # find the route to the destination
-                    for route in self.routing_table:
-                        if route.ip.belong_to(dst):
-                            self.send(route.source, msg)
-                            print(f"send to port {self.ports[route.source]}")
-
+                    
+                    # if the ip is not in the routing table return the msg with no route
+                    if not self.check_route(dst):
+                        self.send(srcif, json.dumps({"src": self.our_addr(srcif), "dst" : message["src"], "type": "no route",
+                                                     "msg": {}}))
+                        
                 elif msg_type == "dump":
                     self.dump(message)
 

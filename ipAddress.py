@@ -1,3 +1,6 @@
+"""
+    This class is for the ip addrss
+"""
 class Ip:
     def __init__(self, ip, netmask):
         self.ip_string = ip
@@ -12,7 +15,7 @@ class Ip:
         self.mask_len = 0
         for i in range(self.length):
             self.mask_len += self.mask[i].bit_count()
-
+    '''
     def ip_to_int(self):
         """Convert dot-decimal IP address to an integer."""
         octets = self.ip_string.split('.')
@@ -54,8 +57,11 @@ class Ip:
             if match_length > max_match_length:
                 max_match_length = match_length
         return max_match_length
-
-    def belong_to(self, other_ip) -> bool:
+    '''
+    
+    # check if the given ip addrss belong to this ip class return true and longest match
+    def belong_to(self, other_ip):
+        # check if the other is an ip class
         if isinstance(other_ip, Ip):
             other_network = other_ip.network_prefix
         else:
@@ -63,16 +69,35 @@ class Ip:
             other_network = [other_address[i] & self.mask[i] for i in range(self.length)]
         for i in range(self.length):
             if self.network_prefix[i] != other_network[i]:
-                return False
-        return True
-
+                return 0, False
+        return self.mask_len, True
+    
+    # check if the two ip address is adjenct
+    # def is_adjacent(self, other):
+    #     if not isinstance(other, Ip):
+    #         return False
+    #     if self.mask != other.mask:
+    #         return False
+    #     return self.address[:-1] == other.address[:-1] and abs(self.address[-1] - other.address[-1]) == 1
+    
     def __str__(self) -> str:
         return ".".join(str(qdn) for qdn in self.address) + f"/{self.mask_len}"
 
-
+    def update_mask_length(self, new_mask_len):
+        if new_mask_len < 0 or new_mask_len > 32:
+            raise ValueError("Invalid mask length")
+        new_mask = [0, 0, 0, 0]
+        for i in range(new_mask_len):
+            new_mask[i // 8] |= 1 << (7 - (i % 8))
+        self.mask = new_mask
+        self.mask_len = new_mask_len
+        
 if __name__ == "__main__":
     x = Ip("192.168.0.1", "255.255.255.0")
-    y = Ip("192.168.1.10", "255.255.254.0")
-    print(x.mask_len)
-    print(x)
-    print(x.belong_to(y))
+    print("Original mask:", x.mask)
+    print("Original mask length:", x.mask_len)
+    
+    # Update mask length to 25
+    x.update_mask_length(20)
+    print("Updated mask:", x.mask)
+    print("Updated mask length:", x.mask_len)
