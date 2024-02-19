@@ -1,5 +1,5 @@
 from ipAddress import Ip
- 
+
 
 class Route:
     def __init__(self, messageJson):
@@ -50,3 +50,33 @@ class Route:
             "dst": message["src"],
             "type": "withdraw"
         }
+
+    # Update check for the exact same route
+    def __eq__(self, other):
+        if isinstance(other, Route):
+            return (self.source == other.source and
+                    self.network == other.network and
+                    self.netmask == other.netmask and
+                    self.localpref == other.localpref and
+                    self.ASPath == other.ASPath and
+                    self.origin == other.origin and
+                    self.selfOrigin == other.selfOrigin)
+        return False
+
+    # Check if the route is adjacent to another route
+    def isAdjacent(self, other):
+        return (self.source == other.source and
+                self.localpref == other.localpref and
+                self.ASPath == other.ASPath and
+                self.origin == other.origin and
+                self.selfOrigin == other.selfOrigin and
+                self.Ip_isAdjacent(other))
+
+    def Ip_isAdjacent(self, other_route):
+
+        ip_int1 = self.ip.ip_to_int()
+        ip_int2 = other_route.ip.ip_to_int()
+
+        mask = self.ip.mask_len
+
+        return abs(ip_int1 - ip_int2) == 2 ** (32 - mask)

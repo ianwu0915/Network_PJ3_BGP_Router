@@ -47,6 +47,7 @@ class Router:
 
         route = Route(message)
         self.routing_table.append(route)
+        self.checkAggregation(route)
 
         as_path = route.ASPath.copy()
         as_path.insert(0, self.asn)
@@ -94,16 +95,16 @@ class Router:
         dump = []
         for route in self.routing_table:
             route_dump = route.dump()
-
+            route_dump['peer'] = route.source
             # Update the peer field from the message_copy with the source IP of the router that sent "update" message
-            for msg in self.messageCopy:
-                if (((msg["type"] == "update" and route_dump['network'] == msg["msg"]["network"]) and
-                     route_dump['ASPath'] == msg["msg"]["ASPath"]) and
-                        route_dump['netmask'] == msg["msg"]["netmask"]):
-                    route_dump['peer'] = msg["src"]
-
-                    print("Peer: ", route_dump['peer'])
-                    break
+            # for msg in self.messageCopy:
+            #     if (((msg["type"] == "update" and route_dump['network'] == msg["msg"]["network"]) and
+            #          route_dump['ASPath'] == msg["msg"]["ASPath"]) and
+            #             route_dump['netmask'] == msg["msg"]["netmask"]):
+            #         route_dump['peer'] = msg["src"]
+            #
+            #         print("Peer: ", route_dump['peer'])
+            #         break
 
             dump.append(route_dump)
 
@@ -111,6 +112,28 @@ class Router:
             {"src": self.our_addr(message["src"]), "dst": message["src"], "type": "table", "msg": dump})
 
         self.send(message["src"], table_msg)
+
+    def checkAggregation(self, route):
+        while True:
+            aggregated = False
+            for r in self.routing_table:
+                for other in self.routing_table:
+                    if other != r and r.isAdjacent(other):
+                        self.routing_table.remove(other)
+                        r.netmask = r.ip.shift_ip_and_mask()
+
+                        r_ip = r.ip.ip_to_int()
+                        o_ip = other.ip.ip_to_int()
+
+                        if r_ip > o_ip:
+                            r.network = other.nework
+
+                        aggregated = True
+                        break
+                if aggregated:
+                    break
+            if not aggregated:
+                break
 
     def run(self):
         while True:

@@ -1,6 +1,7 @@
 class Ip:
     def __init__(self, ip, netmask):
         self.ip_string = ip
+        self.netmask_string = netmask
         self.length = 4
         self.address = [int(qdn) for qdn in ip.split('.')]
         # self.binary_address = "".join(format(part, "08b") for part in self.address)
@@ -11,6 +12,32 @@ class Ip:
         self.mask_len = 0
         for i in range(self.length):
             self.mask_len += self.mask[i].bit_count()
+
+    def ip_to_int(self):
+        """Convert dot-decimal IP address to an integer."""
+        octets = self.ip_string.split('.')
+        return (int(octets[0]) << 24) + (int(octets[1]) << 16) + (int(octets[2]) << 8) + int(octets[3])
+
+    def update_mask_length(self, new_mask_len):
+        if new_mask_len < 0 or new_mask_len > 32:
+            raise ValueError("Invalid mask length")
+        new_mask = [0, 0, 0, 0]
+        for i in range(new_mask_len):
+            new_mask[i // 8] |= 1 << (7 - (i % 8))
+        self.mask = new_mask
+        self.mask_len = new_mask_len
+
+    def shift_ip_and_mask(self):
+        # Convert IP and mask to integer
+        mask_int = sum(part << (24 - i * 8) for i, part in enumerate(map(int, self.netmask_string.split('.'))))
+
+        # Shift one bit to the left
+        mask_int <<= 1
+
+        # Convert back to dot-decimal form
+        mask = '.'.join(str((mask_int >> (24 - i * 8)) & 0xFF) for i in range(4))
+
+        return mask
 
     def longest_match(self, other_ip):
         if isinstance(other_ip, Ip):
