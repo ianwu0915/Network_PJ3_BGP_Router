@@ -137,36 +137,36 @@ class Router:
     
     def check_route(self, dst):
         longest = 0
-        index = -1
         best_route = None
         
-        for i, route in enumerate(self.routing_table):
+        for route in self.routing_table:
             match_length = route.ip.belong_to(dst)
-                      
+            
+            # Skip routes that don't match the destination IP address
+            if match_length < 0:
+                continue
+
             if match_length > longest:
                 longest = match_length
-                index = i
                 best_route = route
             elif match_length == longest:
-                # Additional tiebreaker logic
-                if best_route is not None:
-                    if route.localpref > best_route.localpref:
+                if not best_route:
+                    continue
+                # Additional tiebreaker logic based on the provided rules
+                if route.localpref > best_route.localpref:
+                    best_route = route
+                elif route.localpref == best_route.localpref:
+                    if route.selfOrigin and not best_route.selfOrigin:
                         best_route = route
-                    elif route.localpref == best_route.localpref:
-                        if route.selfOrigin and not best_route.selfOrigin:
-                            best_route = route
-                        elif route.ASPath < best_route.ASPath:
-                            best_route = route
-                        elif route.origin < best_route.origin:
-                            best_route = route
-                        elif route.source < best_route.source:
-                            best_route = route
+                    elif len(route.ASPath) < len(best_route.ASPath):
+                        best_route = route
+                    elif route.compare_origin(best_route.origin) > 1:
+                        best_route = route
+                    elif route.source_to_int() < best_route.source_to_int():
+                        best_route = route
 
-        if best_route:
-            return best_route
-        else:
-            return None
-                        
+        return best_route
+              
     # respond that there is no route to this destination
     def no_route(self, outgoing_ip, destination):
         self.send(outgoing_ip, json.dumps({"src": self.our_addr(outgoing_ip), "dst" : destination, "type": "no route",
@@ -201,8 +201,9 @@ class Router:
                     best_route = self.check_route(dst)
                     # if the ip is not in the routing table return the msg with no route
                     if not best_route:
-                        self.send(srcif, json.dumps({"src": self.our_addr(srcif), "dst" : message["src"], "type": "no route",
-                                                     "msg": {}}))
+                        self.no_route(srcif, message["src"])
+                        #self.send(srcif, json.dumps({"src": self.our_addr(srcif), "dst": message["src"], "type": "no route",
+                                                     #"msg": {}}))
                     else:
                         self.send(best_route.source, msg)
                         

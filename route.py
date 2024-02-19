@@ -1,8 +1,15 @@
 from ipAddress import Ip
+import json
 
 
 class Route:
     def __init__(self, messageJson):
+        # this is used to decide the priority of the origin
+        self.ORIGIN_PRIORITY = {
+        "IGP": 3,
+        "EGP": 2,
+        "UNK": 1
+        }
         # the source of the ip that send this route
         self.source = messageJson["src"]
         self.network = messageJson["msg"]['network']
@@ -81,3 +88,34 @@ class Route:
         mask = self.ip.mask_len
 
         return abs(ip_int1 - ip_int2) == 2 ** (32 - mask)
+    
+    def compare_origin(self, other_origin):
+        """
+        Compare the origin of this route with another route's origin based on priority.
+        Returns:
+            1 if this route's origin is better, -1 if the other route's origin is better, 0 if they are equal.
+        """
+        my_priority = self.ORIGIN_PRIORITY.get(self.origin, 0)
+        other_priority = self.ORIGIN_PRIORITY.get(other_origin, 0)
+
+        if my_priority > other_priority:
+            return 1
+        elif my_priority < other_priority:
+            return -1
+        else:
+            return 0
+    
+    def source_to_int(self):
+        octets = self.source.split('.')
+        return (int(octets[0]) << 24) + (int(octets[1]) << 16) + (int(octets[2]) << 8) + int(octets[3])
+
+
+if __name__ == "__main__":
+    x = Route(json.loads('{"type": "update", "src": "192.168.0.2", "dst": "192.168.0.1", "msg": {"network": "192.168.1.0", "netmask": "255.255.255.0", "localpref": 100, "ASPath": [1], "origin": "EGP", "selfOrigin": true}}'))
+    print(type(x.localpref))
+    print(type(x.selfOrigin))
+    print(x.selfOrigin)
+    print(x.ASPath)
+    print(type(x.ASPath))
+    print(x.origin)
+    print(type(x.origin))
