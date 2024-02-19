@@ -15,7 +15,7 @@ class Ip:
         self.mask_len = 0
         for i in range(self.length):
             self.mask_len += self.mask[i].bit_count()
-    '''
+    
     def ip_to_int(self):
         """Convert dot-decimal IP address to an integer."""
         octets = self.ip_string.split('.')
@@ -57,9 +57,8 @@ class Ip:
             if match_length > max_match_length:
                 max_match_length = match_length
         return max_match_length
-    '''
     
-    # check if the given ip addrss belong to this ip class return true and longest match
+    # check if the given ip addrss belong to this ip class and return the longest len
     def belong_to(self, other_ip):
         # check if the other is an ip class
         if isinstance(other_ip, Ip):
@@ -69,8 +68,8 @@ class Ip:
             other_network = [other_address[i] & self.mask[i] for i in range(self.length)]
         for i in range(self.length):
             if self.network_prefix[i] != other_network[i]:
-                return 0, False
-        return self.mask_len, True
+                return -1
+        return self.mask_len
     
     # check if the two ip address is adjenct
     # def is_adjacent(self, other):

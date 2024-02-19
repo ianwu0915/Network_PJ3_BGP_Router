@@ -134,7 +134,44 @@ class Router:
                     break
             if not aggregated:
                 break
+    
+    def check_route(self, dst):
+        longest = 0
+        index = -1
+        best_route = None
+        
+        for i, route in enumerate(self.routing_table):
+            match_length = route.ip.belong_to(dst)
+                      
+            if match_length > longest:
+                longest = match_length
+                index = i
+                best_route = route
+            elif match_length == longest:
+                # Additional tiebreaker logic
+                if best_route is not None:
+                    if route.localpref > best_route.localpref:
+                        best_route = route
+                    elif route.localpref == best_route.localpref:
+                        if route.selfOrigin and not best_route.selfOrigin:
+                            best_route = route
+                        elif route.ASPath < best_route.ASPath:
+                            best_route = route
+                        elif route.origin < best_route.origin:
+                            best_route = route
+                        elif route.source < best_route.source:
+                            best_route = route
 
+        if best_route:
+            return best_route
+        else:
+            return None
+                        
+    # respond that there is no route to this destination
+    def no_route(self, outgoing_ip, destination):
+        self.send(outgoing_ip, json.dumps({"src": self.our_addr(outgoing_ip), "dst" : destination, "type": "no route",
+                                                     "msg": {}}))
+        
     def run(self):
         while True:
             socks = select.select(self.sockets.values(), [], [], 0.1)[0]
@@ -161,10 +198,13 @@ class Router:
                     dst = message['dst']
                     print("Forwarding message to %s" % dst)
                     
+                    best_route = self.check_route(dst)
                     # if the ip is not in the routing table return the msg with no route
-                    if not self.check_route(dst):
+                    if not best_route:
                         self.send(srcif, json.dumps({"src": self.our_addr(srcif), "dst" : message["src"], "type": "no route",
                                                      "msg": {}}))
+                    else:
+                        self.send(best_route.source, msg)
                         
                 elif msg_type == "dump":
                     self.dump(message)
