@@ -214,8 +214,6 @@ class Router:
                     # if the ip is not in the routing table return the msg with no route
                     if not best_route:
                         self.no_route(srcif, message["src"])
-                        #self.send(srcif, json.dumps({"src": self.our_addr(srcif), "dst": message["src"], "type": "no route",
-                                                     #"msg": {}}))
                     elif self.relations[srcif] == "cust" or self.relations[best_route.source] == "cust":
                         self.send(best_route.source, msg)
                         print("Forwarding message to %s for port %s" % (dst, best_route.source))
