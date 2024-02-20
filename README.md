@@ -19,7 +19,7 @@ We can easily get the attribute inside the route class.
 
 ### Aggregation
 We use the route class to check if two routes are neighbor and can be aggregation or not.
-If two route classes is neighbor, we will aggregate them togather.
+If two route classes is neighbor, we will aggregate them together.
 
 ### Disaggregate
 We use an un-aggregation table to keep track of all the update entry. When disaggregate we will withdraw from the
