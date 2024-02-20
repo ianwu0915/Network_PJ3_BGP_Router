@@ -143,7 +143,7 @@ class Router:
             match_length = route.ip.belong_to(dst)
             
             # Skip routes that don't match the destination IP address
-            if match_length < 0:
+            if match_length <= 0:
                 continue
 
             if match_length > longest:
@@ -169,24 +169,15 @@ class Router:
                         elif len(best_route.ASPath) > len(route.ASPath):
                             best_route = route
                         else:
-                            if best_route.source_to_int() < route.source_to_int():
+                            if best_route.compare_origin(route.origin) == 1:
                                 continue
-                            else:
+                            elif best_route.compare_origin(route.origin) == -1:
                                 best_route = route
-                    
-                # Additional tiebreaker logic based on the provided rules
-                # if route.localpref > best_route.localpref:
-                #     best_route = route
-                # elif route.localpref == best_route.localpref:
-                #     if route.selfOrigin and not best_route.selfOrigin:
-                #         best_route = route
-                #     elif len(route.ASPath) < len(best_route.ASPath):
-                #         best_route = route
-                #     elif route.compare_origin(best_route.origin) > 1:
-                #         best_route = route
-                #     elif route.source_to_int() < best_route.source_to_int():
-                #         best_route = route
-
+                            else:
+                                if best_route.source_to_int() < route.source_to_int():
+                                    continue
+                                else:
+                                    best_route = route
         return best_route
               
     # respond that there is no route to this destination
