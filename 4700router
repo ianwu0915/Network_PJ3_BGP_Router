@@ -31,6 +31,7 @@ class Router:
         self.ports = {}
         self.neighbors = []
         self.routing_table = []
+        self.routing_table_no_aggregation = []
         self.messageCopy = []
 
         # Create a socket for each connection
@@ -76,7 +77,7 @@ class Router:
         route = Route(message)
         self.routing_table.append(route)
         self.check_aggregation(route)
-
+        self.routing_table_no_aggregation.append(route)
         as_path = route.ASPath.copy()
         as_path.insert(0, self.asn)
 
@@ -109,15 +110,32 @@ class Router:
             for r in self.routing_table:
                 if (r.source == message["src"] and r.network == each["network"]
                         and r.netmask == each['netmask']):
+                    print("Removing route: ", r.network, r.netmask, r.ASPath, r.source)
                     self.routing_table.remove(r)
+                    self.routing_table_no_aggregation.remove(r)
+                    break
 
-        # check the old routes that has been aggregated
-        # for each in message["msg"]:
-        #     for each in self.messageCopy:
-        #         if ((each["type"] == "update" and each["src"] == message["src"]
-        #             and each["msg"]["network"] == message["msg"]["network"])
-        #                 and each["msg"]["netmask"] == message["msg"]["netmask"]):
-        # rebuild the routing table using the messages in messageCopy with type "update" and "withdraw"
+        for each in message["msg"]:
+            print("Checking for route in another table: ", each["network"], each["netmask"])
+
+            for route in self.routing_table_no_aggregation:
+                print("Route in another table: ", route.source, route.network, route.netmask)
+
+            for ra in self.routing_table_no_aggregation:
+                if (ra.source == message["src"] and ra.network == each["network"]
+                        and ra.netmask == each['netmask']):
+                    self.routing_table_no_aggregation.remove(ra)
+                    print("Removing route from another table: ", ra.network, ra.netmask, ra.ASPath, ra.source)
+
+                    self.routing_table = []
+                    for route in self.routing_table_no_aggregation:
+                        self.routing_table.append(route)
+
+                    print("routing table: ", self.routing_table)
+                    # Aggregate the routes again
+                    for route in self.routing_table:
+                        self.check_aggregation(route)
+
 
         # if from customer, send to all neighbors
         if self.relations[message["src"]] == "cust":
@@ -175,14 +193,19 @@ class Router:
                         print("Aggregating routes: ", r.network, r.netmask, " and ", other.network, other.netmask)
                         self.routing_table.remove(other)
                         print("removing route: ", other.network, other.netmask)
-                        r.netmask = r.ip.shift_ip_and_mask()
-                        r.ip = Ip(r.network, r.netmask)
 
+                        r_copy = r.copy_route()
                         r_ip = r.ip.network_to_int()
                         o_ip = other.ip.network_to_int()
 
                         if r_ip > o_ip:
-                            r.network = other.nework
+                            r_copy.network = other.network
+
+                        r_copy.netmask = r_copy.ip.shift_ip_and_mask()
+                        r_copy.ip = Ip(r_copy.network, r_copy.netmask)
+
+                        self.routing_table.remove(r)
+                        self.routing_table.append(r_copy)
 
                         print("New route: ", r.network, r.netmask)
                         aggregated = True
