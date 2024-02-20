@@ -48,6 +48,22 @@ class Route:
     #       "peer": "172.168.0.2",
     #       "selfOrigin": true
     #     }
+
+    def copy_route(self):
+        return Route({
+            "msg": {
+                "origin": self.origin,
+                "localpref": self.localpref,
+                "network": self.network,
+                "ASPath": self.ASPath,
+                "netmask": self.netmask,
+                "peer": "",
+                "selfOrigin": self.selfOrigin
+            },
+            "src": self.source,
+            "dst": self.source,
+            "type": "update"
+        })
     def dump(self):
         """
         Dump the class information in a json format
