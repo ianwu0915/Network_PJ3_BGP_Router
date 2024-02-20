@@ -17,7 +17,9 @@ class Ip:
         self.network_prefix_string = ".".join(str(qdn) for qdn in self.network_prefix)
         self.mask_len = 0
         for i in range(self.length):
-            self.mask_len += self.mask[i].bit_count()
+            # self.mask_len += self.mask[i].bit_count()
+            self.mask_len += bin(self.mask[i]).count("1")
+
 
     def network_to_int(self):
         """
