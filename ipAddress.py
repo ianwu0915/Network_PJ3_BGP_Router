@@ -11,6 +11,7 @@ class Ip:
         self.mask = [int(qdn) for qdn in netmask.split('.')]
         # self.binary_mask = "".join(format(part, "08b") for part in self.mask)
         self.network_prefix = [self.address[i] & self.mask[i] for i in range(self.length)]
+        self.network_prefix_string = ".".join(str(qdn) for qdn in self.network_prefix)
         # self.binary_network = [int(format(part, "08b")) for part in self.network_prefix]
         self.mask_len = 0
         for i in range(self.length):
@@ -18,7 +19,7 @@ class Ip:
     
     def ip_to_int(self):
         """Convert dot-decimal IP address to an integer."""
-        octets = self.ip_string.split('.')
+        octets = self.network_prefix_string.split('.')
         return (int(octets[0]) << 24) + (int(octets[1]) << 16) + (int(octets[2]) << 8) + int(octets[3])
 
     def update_mask_length(self, new_mask_len):

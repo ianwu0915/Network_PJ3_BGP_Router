@@ -3,6 +3,7 @@
 import argparse, socket, time, json, select, struct, sys, math
 
 from route import Route
+from ipAddress import Ip
 
 
 # Should constantly be reading from the sockets to make sure we receive all messages
@@ -70,11 +71,25 @@ class Router:
     def withdraw(self, message):
         self.messageCopy.append(message)
 
+        # remove the route from the routing table
         for each in message["msg"]:
             for r in self.routing_table:
                 if (r.source == message["src"] and r.network == each["network"]
                         and r.netmask == each['netmask']):
                     self.routing_table.remove(r)
+
+        # check the old routes that has been aggregated
+        # for each in message["msg"]:
+        #     for each in self.messageCopy:
+        #         if ((each["type"] == "update" and each["src"] == message["src"]
+        #             and each["msg"]["network"] == message["msg"]["network"])
+        #                 and each["msg"]["netmask"] == message["msg"]["netmask"]):
+               # rebuild the routing table using the messages in messageCopy with type "update" and "withdraw"
+
+
+
+
+
 
         # if from customer, send to all neighbors
         if self.relations[message["src"]] == "cust":
@@ -119,8 +134,11 @@ class Router:
             for r in self.routing_table:
                 for other in self.routing_table:
                     if other != r and r.isAdjacent(other):
+                        print("Aggregating routes: ", r.network, r.netmask, " and ", other.network, other.netmask)
                         self.routing_table.remove(other)
+                        print("removing route: ", other.network, other.netmask)
                         r.netmask = r.ip.shift_ip_and_mask()
+                        r.ip = Ip(r.network, r.netmask)
 
                         r_ip = r.ip.ip_to_int()
                         o_ip = other.ip.ip_to_int()
@@ -128,22 +146,23 @@ class Router:
                         if r_ip > o_ip:
                             r.network = other.nework
 
+                        print("New route: ", r.network, r.netmask)
                         aggregated = True
                         break
                 if aggregated:
                     break
             if not aggregated:
                 break
-    
+
     def check_route(self, dst):
         longest = 0
         best_route = None
-        
+
         for route in self.routing_table:
             match_length = route.ip.belong_to(dst)
-            
+
             # Skip routes that don't match the destination IP address
-            if match_length <= 0:
+            if match_length < 0:
                 continue
 
             if match_length > longest:
@@ -169,22 +188,31 @@ class Router:
                         elif len(best_route.ASPath) > len(route.ASPath):
                             best_route = route
                         else:
-                            if best_route.compare_origin(route.origin) == 1:
+                            if best_route.source_to_int() < route.source_to_int():
                                 continue
-                            elif best_route.compare_origin(route.origin) == -1:
-                                best_route = route
                             else:
-                                if best_route.source_to_int() < route.source_to_int():
-                                    continue
-                                else:
-                                    best_route = route
+                                best_route = route
+
+                # Additional tiebreaker logic based on the provided rules
+                # if route.localpref > best_route.localpref:
+                #     best_route = route
+                # elif route.localpref == best_route.localpref:
+                #     if route.selfOrigin and not best_route.selfOrigin:
+                #         best_route = route
+                #     elif len(route.ASPath) < len(best_route.ASPath):
+                #         best_route = route
+                #     elif route.compare_origin(best_route.origin) > 1:
+                #         best_route = route
+                #     elif route.source_to_int() < best_route.source_to_int():
+                #         best_route = route
+
         return best_route
-              
+
     # respond that there is no route to this destination
     def no_route(self, outgoing_ip, destination):
-        self.send(outgoing_ip, json.dumps({"src": self.our_addr(outgoing_ip), "dst" : destination, "type": "no route",
-                                                     "msg": {}}))
-        
+        self.send(outgoing_ip, json.dumps({"src": self.our_addr(outgoing_ip), "dst": destination, "type": "no route",
+                                           "msg": {}}))
+
     def run(self):
         while True:
             socks = select.select(self.sockets.values(), [], [], 0.1)[0]
@@ -209,18 +237,19 @@ class Router:
                 elif msg_type == "data":
                     # forward the message to the destination
                     dst = message['dst']
-                    
+
                     best_route = self.check_route(dst)
                     # if the ip is not in the routing table return the msg with no route
                     if not best_route:
                         self.no_route(srcif, message["src"])
+
                     elif self.relations[srcif] == "cust" or self.relations[best_route.source] == "cust":
                         self.send(best_route.source, msg)
                         print("Forwarding message to %s for port %s" % (dst, best_route.source))
+
                     else:
                         print("the message is dropped!")
-                        
-                        
+
                 elif msg_type == "dump":
                     self.dump(message)
 
