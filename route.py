@@ -78,6 +78,7 @@ class Route:
                 self.ASPath == other.ASPath and
                 self.origin == other.origin and
                 self.selfOrigin == other.selfOrigin and
+                self.netmask == other.netmask and
                 self.Ip_isAdjacent(other))
 
     def Ip_isAdjacent(self, other_route):
