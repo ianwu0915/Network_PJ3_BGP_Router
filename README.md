@@ -21,11 +21,22 @@ We can easily get the attribute inside the route class.
 We use the route class to check if two routes are neighbor and can be aggregation or not.
 If two route classes is neighbor, we will aggregate them togather.
 
+### Disaggregate
+We use an un-aggregation table to keep track of all the update entry. When disaggregate we will withdraw from the
+table and run the loop of the aggregation to see if there are route to be aggregate.
+
 
 
 ## Challenge of the project
 ### Ip address longest prefix
+The ip address is store in a list of four elements. I need to iterative the mask and apply the net mask to find out the longest
+length matching the given address.
 ### default 0.0.0.0/0
-When test the router, we couldn't pass the 5-1 test in quite a while.
+When test the router, we couldn't pass the 5-1 test in quite a while. At first, we thought it was the problem of logic 
+that the BGP router to send a data or not is not correct. However, we change to send all the data no matter it is to peer
+or customer, the problem still exist. Next, we try if it is the problem in the find best route, but the 5-2 test passed.
+We then try to find out all the config file. We found out that there is one route with the netmask of 0.0.0.0/0. We
+previous implementation set the matching length as 0, so it would consider there was no route. Thus, we missed two 
+message.
 ### Aggregation
 ### Disaggregate
