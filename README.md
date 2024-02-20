@@ -13,12 +13,19 @@ element.
 
 ### The entry of the routing table
 We choose to build the entry of the routing table a class named Route.
+This enables the information we need like the network prefix, local preference, AS path, origin, the source of the route
+will all attached with route class. The routing table will only be the list of the route class.
+We can easily get the attribute inside the route class.
 
 ### Aggregation
+We use the route class to check if two routes are neighbor and can be aggregation or not.
+If two route classes is neighbor, we will aggregate them togather.
+
 
 
 ## Challenge of the project
 ### Ip address longest prefix
-### Test 5-1
+### default 0.0.0.0/0
+When test the router, we couldn't pass the 5-1 test in quite a while.
 ### Aggregation
 ### Disaggregate
