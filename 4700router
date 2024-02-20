@@ -1,9 +1,12 @@
 #!/usr/bin/env -S python3 -u
 
-import argparse, socket, time, json, select, struct, sys, math
+import argparse
+import json
+import select
+import socket
 
-from route import Route
 from ipAddress import Ip
+from route import Route
 
 
 # Should constantly be reading from the sockets to make sure we receive all messages
@@ -11,6 +14,10 @@ from ipAddress import Ip
 # handle json messages based on type, source, destination, and message
 
 class Router:
+    """
+    The class of the router that can send data according to the routing table
+    It can also update and withdraw the routing accordingly.
+    """
     def __init__(self, asn, connections):
         print("Router at AS %s starting up" % asn)
         self.asn = asn
@@ -48,7 +55,7 @@ class Router:
 
         route = Route(message)
         self.routing_table.append(route)
-        self.checkAggregation(route)
+        self.check_aggregation(route)
 
         as_path = route.ASPath.copy()
         as_path.insert(0, self.asn)
@@ -84,12 +91,7 @@ class Router:
         #         if ((each["type"] == "update" and each["src"] == message["src"]
         #             and each["msg"]["network"] == message["msg"]["network"])
         #                 and each["msg"]["netmask"] == message["msg"]["netmask"]):
-               # rebuild the routing table using the messages in messageCopy with type "update" and "withdraw"
-
-
-
-
-
+        # rebuild the routing table using the messages in messageCopy with type "update" and "withdraw"
 
         # if from customer, send to all neighbors
         if self.relations[message["src"]] == "cust":
@@ -128,20 +130,20 @@ class Router:
 
         self.send(message["src"], table_msg)
 
-    def checkAggregation(self, route):
+    def check_aggregation(self, route):
         while True:
             aggregated = False
             for r in self.routing_table:
                 for other in self.routing_table:
-                    if other != r and r.isAdjacent(other):
+                    if other != r and r.is_adjacent(other):
                         print("Aggregating routes: ", r.network, r.netmask, " and ", other.network, other.netmask)
                         self.routing_table.remove(other)
                         print("removing route: ", other.network, other.netmask)
                         r.netmask = r.ip.shift_ip_and_mask()
                         r.ip = Ip(r.network, r.netmask)
 
-                        r_ip = r.ip.ip_to_int()
-                        o_ip = other.ip.ip_to_int()
+                        r_ip = r.ip.network_to_int()
+                        o_ip = other.ip.network_to_int()
 
                         if r_ip > o_ip:
                             r.network = other.nework
@@ -155,7 +157,7 @@ class Router:
                 break
 
     def check_route(self, dst):
-        longest = 0
+        longest = -1
         best_route = None
 
         for route in self.routing_table:
@@ -192,20 +194,6 @@ class Router:
                                 continue
                             else:
                                 best_route = route
-
-                # Additional tiebreaker logic based on the provided rules
-                # if route.localpref > best_route.localpref:
-                #     best_route = route
-                # elif route.localpref == best_route.localpref:
-                #     if route.selfOrigin and not best_route.selfOrigin:
-                #         best_route = route
-                #     elif len(route.ASPath) < len(best_route.ASPath):
-                #         best_route = route
-                #     elif route.compare_origin(best_route.origin) > 1:
-                #         best_route = route
-                #     elif route.source_to_int() < best_route.source_to_int():
-                #         best_route = route
-
         return best_route
 
     # respond that there is no route to this destination

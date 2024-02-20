@@ -3,27 +3,39 @@ import json
 
 
 class Route:
-    def __init__(self, messageJson):
+    """
+    The class represent a route that will be store in the routing table.
+    """
+    def __init__(self, message_json):
+        """
+        The init function to create the Route class
+        :param message_json: The json object to build the route
+        """
         # this is used to decide the priority of the origin
         self.ORIGIN_PRIORITY = {
-        "IGP": 3,
-        "EGP": 2,
-        "UNK": 1
+            "IGP": 3,
+            "EGP": 2,
+            "UNK": 1
         }
         # the source of the ip that send this route
-        self.source = messageJson["src"]
-        self.network = messageJson["msg"]['network']
-        self.netmask = messageJson["msg"]['netmask']
-        self.localpref = messageJson["msg"]['localpref']
-        self.ASPath = messageJson["msg"]['ASPath']
-        self.origin = messageJson["msg"]['origin']
-        self.selfOrigin = messageJson["msg"]['selfOrigin']
+        self.source = message_json["src"]
+        self.network = message_json["msg"]['network']
+        self.netmask = message_json["msg"]['netmask']
+        self.localpref = message_json["msg"]['localpref']
+        self.ASPath = message_json["msg"]['ASPath']
+        self.origin = message_json["msg"]['origin']
+        self.selfOrigin = message_json["msg"]['selfOrigin']
         self.ip = Ip(self.network, self.netmask)
 
-    def copy(self, new_AsPath):
+    def copy(self, new_as_path):
+        """
+        The function to return the new As path in a json format string
+        :param new_as_path: the new path
+        :return: string of the netmask, ASPath, network
+        """
         return {
             'netmask': self.netmask,
-            'ASPath': new_AsPath,
+            'ASPath': new_as_path,
             'network': self.network
         }
 
@@ -37,6 +49,10 @@ class Route:
     #       "selfOrigin": true
     #     }
     def dump(self):
+        """
+        Dump the class information in a json format
+        :return: string represent of the class
+        """
         return {
             'origin': self.origin,
             'localpref': self.localpref,
@@ -48,6 +64,11 @@ class Route:
         }
 
     def withdraw(self, message):
+        """
+        Send the withdrawa message with the given json value
+        :param message: json object that send the with draw
+        :return: string format of the withdraw message
+        """
         return {
             "msg": {
                 "netmask": self.netmask,
@@ -61,6 +82,11 @@ class Route:
 
     # Update check for the exact same route
     def __eq__(self, other):
+        """
+        The equal method to check if the two route is the same
+        :param other: Route class to compare
+        :return: True if equal, False otherwise
+        """
         if isinstance(other, Route):
             return (self.source == other.source and
                     self.network == other.network and
@@ -72,24 +98,34 @@ class Route:
         return False
 
     # Check if the route is adjacent to another route
-    def isAdjacent(self, other):
+    def is_adjacent(self, other):
+        """
+        Check if the two Route class is adjacent and can be combined
+        :param other: Route class to check
+        :return: True if adjacent, False otherwise
+        """
         return (self.source == other.source and
                 self.localpref == other.localpref and
                 self.ASPath == other.ASPath and
                 self.origin == other.origin and
                 self.selfOrigin == other.selfOrigin and
                 self.netmask == other.netmask and
-                self.Ip_isAdjacent(other))
+                self.ip_adjacent(other))
 
-    def Ip_isAdjacent(self, other_route):
+    def ip_adjacent(self, other_route):
+        """
+        To check if the other_route is different in the last bit of the network prefix
+        :param other_route: Route class to check
+        :return: True if the address is adjacent, False otherwise
+        """
 
-        ip_int1 = self.ip.ip_to_int()
-        ip_int2 = other_route.ip.ip_to_int()
+        ip_int1 = self.ip.network_to_int()
+        ip_int2 = other_route.ip.network_to_int()
 
         mask = self.ip.mask_len
 
         return abs(ip_int1 - ip_int2) == 2 ** (32 - mask)
-    
+
     def compare_origin(self, other_origin):
         """
         Compare the origin of this route with another route's origin based on priority.
@@ -105,14 +141,19 @@ class Route:
             return -1
         else:
             return 0
-    
+
     def source_to_int(self):
+        """
+        Turn the source ip of the route class to an integer
+        :return: integer
+        """
         octets = self.source.split('.')
         return (int(octets[0]) << 24) + (int(octets[1]) << 16) + (int(octets[2]) << 8) + int(octets[3])
 
 
 if __name__ == "__main__":
-    x = Route(json.loads('{"type": "update", "src": "192.168.0.2", "dst": "192.168.0.1", "msg": {"network": "192.168.1.0", "netmask": "255.255.255.0", "localpref": 100, "ASPath": [1], "origin": "EGP", "selfOrigin": true}}'))
+    x = Route(json.loads(
+        '{"type": "update", "src": "192.168.0.2", "dst": "192.168.0.1", "msg": {"network": "192.168.1.0", "netmask": "255.255.255.0", "localpref": 100, "ASPath": [1], "origin": "EGP", "selfOrigin": true}}'))
     print(type(x.localpref))
     print(type(x.selfOrigin))
     print(x.selfOrigin)
