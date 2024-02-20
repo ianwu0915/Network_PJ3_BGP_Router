@@ -1,42 +1,39 @@
-# BGP Router
-This is a representation of a simple BGP router. 
-This router can accept the other router's announcement and update its routing table accordingly, generate and podcast 
-new route to your peer router, managing and compress the routing table, forwarding packet to the correct destination.
-## High Level Approach
-### Ip address
-In order to handle the ip for the masking and combination, we create a Ip class to do the operation of bit shifting and masking.
-### Decide the format of the routing table
-For the routing table, we first thought we can use dictionary to store the route. However, we then realize that the dictionary will not cut down on the runtime.
-The router will have to run through the routing table to find the longest match of the
-network prefix, so the use of the dictionary will not save the run time if we need to run through all the 
-element.
+# BGP Router Simplified Overview
 
-### The entry of the routing table
-We choose to build the entry of the routing table a class named Route.
-This enables the information we need like the network prefix, local preference, AS path, origin, the source of the route
-will all attached with route class. The routing table will only be the list of the route class.
-We can easily get the attribute inside the route class.
+This document outlines the design and challenges faced during the development of a basic BGP router. This router is capable of accepting announcements from peer routers, updating its routing table accordingly, broadcasting new routes to peers, managing and compressing the routing table, and forwarding packets to their correct destinations.
+
+## High-Level Approach
+
+### IP Address Handling
+
+To manage IP addresses, including tasks like bit shifting and masking, we developed an `Ip` class. This class handles operations related to IP address manipulation, ensuring efficient and accurate processing.
+
+### Routing Table Format
+
+Initially, we considered using a dictionary to store routing information. However, we realized that a dictionary wouldn't reduce runtime significantly since the router needs to search the routing table for the longest prefix match, which requires iterating through all elements regardless of the data structure used.
+
+### Routing Table Entries
+
+We decided to encapsulate routing information within a `Route` class. This class stores essential data such as network prefix, local preference, AS path, origin, and source of the route. The routing table itself is a list of `Route` objects, allowing easy access to route attributes.
 
 ### Aggregation
-We use the route class to check if two routes are neighbor and can be aggregation or not.
-If two route classes is neighbor, we will aggregate them togather.
 
-### Disaggregate
-We use an un-aggregation table to keep track of all the update entry. When disaggregate we will withdraw from the
-table and run the loop of the aggregation to see if there are route to be aggregate.
+The `check_aggregation` method within the `Router` class handles route aggregation. It iterates over the routing table, looking for routes that can be combined. When two adjacent routes are found, they are merged into a single route, which is then updated in the routing table. This process repeats until no further aggregation is possible.
 
+### Disaggregation
 
+Conversely, the `disaggregation` method deals with breaking down aggregated routes. It maintains an additional table of non-aggregated routes. When disaggregation is necessary, the method reconstructs the original routing table from this secondary table and then re-applies aggregation where possible to ensure the table remains optimized.
 
-## Challenge of the project
-### Ip address longest prefix
-The ip address is store in a list of four elements. I need to iterative the mask and apply the net mask to find out the longest
-length matching the given address.
-### default 0.0.0.0/0
-When test the router, we couldn't pass the 5-1 test in quite a while. At first, we thought it was the problem of logic 
-that the BGP router to send a data or not is not correct. However, we change to send all the data no matter it is to peer
-or customer, the problem still exist. Next, we try if it is the problem in the find best route, but the 5-2 test passed.
-We then try to find out all the config file. We found out that there is one route with the netmask of 0.0.0.0/0. We
-previous implementation set the matching length as 0, so it would consider there was no route. Thus, we missed two 
-message.
-### Aggregation
-### Disaggregate
+## Project Challenges
+
+### IP Address Longest Prefix Matching
+
+A significant challenge was implementing the longest prefix match for IP addresses, stored as four-element lists. The process involves iterating over the mask and applying the netmask to determine the longest match for a given address.
+
+### Default Route Handling (0.0.0.0/0)
+
+A specific issue encountered involved handling the default route (0.0.0.0/0). Initially, our implementation failed to correctly process this route, mistakingly assigning it a match length of 0, which led to overlooking critical messages. This issue was rectified by adjusting our handling of the default route, ensuring it was correctly considered in our routing decisions.
+
+## Summary
+
+The development of the BGP router presented several challenges, particularly in efficiently managing IP addresses and optimizing the routing table through aggregation and disaggregation. Addressing these challenges required careful consideration of data structures and algorithms, ultimately leading to the successful implementation of a functional BGP router.
